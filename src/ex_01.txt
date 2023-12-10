@@ -42,13 +42,13 @@ int main(void)
             {
                 TIM11->SR &= ~TIM_SR_UIF;
 
-                if (GPIOC->ODR & GPIO_ODR_ODR0)
+                if (GPIOC->ODR & GPIO_ODR_ODR_0)
                 {
-                    GPIOC->ODR &= ~GPIO_ODR_ODR0; // 0001000X & 11111110 = 00010000
+                    GPIOC->ODR &= ~GPIO_ODR_ODR_0; // 0001000X & 11111110 = 00010000
                 }
                 else
                 {
-                    GPIOC->ODR |= GPIO_ODR_ODR0; // 0001000X | 00000001 = 00010001
+                    GPIOC->ODR |= GPIO_ODR_ODR_0; // 0001000X | 00000001 = 00010001
                 }
             }
         }
