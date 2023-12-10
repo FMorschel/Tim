@@ -11,9 +11,9 @@ Utilize o TIM10.
 #include "stm32f4xx.h"
 
 /* Private macro */
+#define F14HZ 1142
+#define F4HZ 4000
 /* Private variables */
-uint8_t contador = 0;
-uint8_t limite = 2;
 /* Private function prototypes */
 /* Private functions */
 
@@ -22,6 +22,7 @@ int main(void)
 
 	//Ligando clocks dos perifericos
 	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOBEN;
+	//RCC->APB1ENR |= RCC_APB1ENR_TIM2EN; <- Outros timers
 	RCC->APB2ENR |= RCC_APB2ENR_TIM10EN;
 
 	// Definindo pino como chave
@@ -31,32 +32,31 @@ int main(void)
 	GPIOB->MODER &= ~GPIO_MODER_MODER0;
 	GPIOB->MODER |= GPIO_MODER_MODER0_0;
 
-	// Configurando o timer para 28Hz
+	// Configurando o timer para 14Hz
 	TIM10->PSC = 999;
-	TIM10->ARR = 570;
+	TIM10->ARR = F14HZ;
 	TIM10->CR1 = TIM_CR1_CEN;
 
 	while (1)
 	{
 
 		if ((GPIOB->IDR & GPIO_IDR_IDR0) == 0) {
-			limite = 2;
+			TIM10->ARR = F14HZ;
 		} else {
-			limite = 7;
+			TIM10->ARR = F4HZ;
+		}
+
+		if (TIM10->CNT >= TIM10->ARR) {
+			TIM10->CNT = 0;
 		}
 
 		if (TIM10->SR & TIM_SR_UIF) {
 			TIM10->SR &= ~TIM_SR_UIF;
-			contador++;
 
-			if (contador == limite) contador = 0;
-
-			if (contador == 0) {
-				if (GPIOC->ODR & GPIO_ODR_ODR0) {
-					GPIOC->ODR &= ~GPIO_ODR_ODR0; //0001000X & 11111110 = 00010000
-				} else {
-					GPIOC->ODR |= GPIO_ODR_ODR0;  //0001000X | 00000001 = 00010001
-				}
+			if (GPIOC->ODR & GPIO_ODR_ODR0) {
+				GPIOC->ODR &= ~GPIO_ODR_ODR0; //0001000X & 11111110 = 00010000
+			} else {
+				GPIOC->ODR |= GPIO_ODR_ODR0;  //0001000X | 00000001 = 00010001
 			}
 		}
 	}
