@@ -6,8 +6,6 @@ fazer um programa que execute um codigo que faça uma contagem de 0 a 9 num disp
 // adicionar a logica do contador de 9 a 0
 // modificar o codigo para dois botoes: 1 botao aperta ele e o contador vai de 0 a 9 em x frequencia, aperta o botao 2 e o contador vai de 9 a 0 em y frequencia
 
-#include "stm32f4xx.h"
-
 #define ledA GPIO_ODR_ODR_0
 #define ledB GPIO_ODR_ODR_1
 #define ledC GPIO_ODR_ODR_2
@@ -20,6 +18,10 @@ fazer um programa que execute um codigo que faça uma contagem de 0 a 9 num disp
 
 #define F28HZ 570
 #define F14HZ 1142
+
+uint8_t contador = 9;
+
+#include "stm32f4xx.h"
 
 const uint32_t leds[10] =
 	{
@@ -34,20 +36,6 @@ const uint32_t leds[10] =
 		ledA | ledB | ledC | ledD | ledE | ledF | ledG, // 1000 | 8  | led = 8
 		ledA | ledB | ledC | ledD | ledF | ledG,		// 1001 | 9  | led = 9
 };
-
-typedef struct {
-	uint8_t passo;
-	uint8_t min;
-	uint8_t max;
-} contador_t;
-
-const contador_t contadores[2] = {
-	{1, 0, 9},
-	{-1, 9, 0},
-};
-
-uint8_t selecionado = 0;
-uint8_t contador = 0;
 
 int main()
 {
@@ -74,23 +62,26 @@ int main()
 		if ((GPIOC->IDR & botao) == 1)
 		{
 			TIM10->ARR = F14HZ;
-			selecionado = 1;
 		}
 		else
 		{
-			selecionado = 0;
 			TIM10->ARR = F28HZ;
 		}
 
-		if (TIM10->CNT >= TIM10->ARR) TIM10->CNT = 0;
+		if (TIM10->CNT >= TIM10->ARR)
+		{
+				TIM10->CNT = 0;
+		}
 
 		if (TIM10->SR & TIM_SR_UIF)
 		{
 			TIM10->SR &= ~TIM_SR_UIF;
-			contador += contadores[selecionado].passo;
-			if (contador == contadores[selecionado].max)
-				contador = contadores[selecionado].min;
+			contador--;
 
+			if (contador < 0)
+			{
+				contador = 9;
+			}
 			GPIOB->ODR = leds[contador];
 		}
 	}

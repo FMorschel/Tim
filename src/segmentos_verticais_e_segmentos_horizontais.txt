@@ -1,0 +1,163 @@
+/*
+fazer um programa que execute um codigo que faça uma contagem de 0 a 9 num display na frequencia de 7hz, caso aperte um botao, o display fara a contagem no dobro da frequencia
+ */
+
+// adicionar no codigo a logica do estado de 0 a 9
+// adicionar a logica do estado de 9 a 0
+// modificar o codigo para dois botoes: 1 botao aperta ele e o estado vai de 0 a 9 em x frequencia, aperta o botao 2 e o estado vai de 9 a 0 em y frequencia
+
+// configurar gpio timer 10(segund0 1) 11(frequencia)
+// fzazer com segmentos horizontal e vertical do display
+
+#include "stm32f4xx.h"
+
+#define ledA GPIO_ODR_ODR_0
+#define ledB GPIO_ODR_ODR_1
+#define ledC GPIO_ODR_ODR_2
+#define ledD GPIO_ODR_ODR_3
+#define ledE GPIO_ODR_ODR_4
+#define ledF GPIO_ODR_ODR_5
+#define ledG GPIO_ODR_ODR_6
+
+#define VERTICAIS (ledB | ledC | ledE | ledF)
+#define HORIZONTAIS (ledA | ledD | ledG)
+
+#define TODOS (ledA | ledB | ledC | ledD | ledE | ledF | ledG)
+
+#define SEG5 5
+#define SEG3 3
+
+// Usado para calcular segundos
+#define PSCTIM10 999
+#define ARRTIM10 15999
+uint8_t contador = 0;
+
+uint8_t estado = 0;
+
+typedef enum {
+	F7HZ = 2285,
+	F5HZ = 3199,
+} frequencias_t;
+
+typedef enum {
+	horizontal,
+	vertical,
+} eixo_t;
+
+// Ideal ser chamado com o uso de uma variavel do tipo eixo_t
+const uint32_t segmentos[2] = {
+	HORIZONTAIS, 
+	VERTICAIS,
+};
+
+// Ideal ser chamado com o uso de uma variavel do tipo eixo_t
+const uint32_t segundos[2] = {
+	SEG5,
+	SEG3,
+};
+
+// Ideal ser chamado com o uso de uma variavel do tipo eixo_t
+const frequencias_t frequencias[2] = {
+	F5HZ,
+	F7HZ,
+};
+
+eixo_t eixo = horizontal;
+
+int main()
+{
+
+	// clock pinos io c e b
+	RCC->AHB1ENR |= RCC_AHB1ENR_GPIOCEN | RCC_AHB1ENR_GPIOBEN;
+
+	// clock timer
+	RCC->APB2ENR |= RCC_APB2ENR_TIM10EN;
+
+	// Configurando pinos saidas segmentos display
+	GPIOB->MODER &= ~(GPIO_MODER_MODER0 | GPIO_MODER_MODER1 | GPIO_MODER_MODER2 | GPIO_MODER_MODER3 | GPIO_MODER_MODER4 | GPIO_MODER_MODER5 | GPIO_MODER_MODER6);
+	GPIOB->MODER |= (GPIO_MODER_MODER0_0 | GPIO_MODER_MODER1_0 | GPIO_MODER_MODER2_0 | GPIO_MODER_MODER3_0 | GPIO_MODER_MODER4_0 | GPIO_MODER_MODER5_0 | GPIO_MODER_MODER6_0);
+
+	// configurando timer 10 para 1Hz
+	TIM10->PSC = PSCTIM10;
+	TIM10->ARR = ARRTIM10;
+	TIM10->CR1 = TIM_CR1_CEN;
+
+	// configurando timer 11 para 5Hz
+	TIM11->PSC = 999;
+	TIM11->ARR = F5HZ;
+	TIM11->CR1 = TIM_CR1_CEN;
+
+	while (1)
+	{
+
+		if (TIM10->SR & TIM_SR_UIF)
+		{
+			TIM10->SR &= ~TIM_SR_UIF;
+			// Passou 1 segundo (1Hz)
+			contador++;
+
+			// Verificar se passou o tempo desejado para trocar a frequencia de piscada dos segmentos do eixo
+			if (contador >= segundos[eixo]) contador = 0;
+
+			/*
+			switch (estado)
+			{
+			case 1:
+				if (segundos == SEG5)
+					contador = 0;
+				break;
+			
+			case 0:
+			default:
+				if (segundos == SEG3)
+					contador = 0;
+				break;
+			}
+			*/
+
+			// Se o contador zerou, significa que passou o tempo do eixo
+			if (contador == 0)
+			{
+
+				// Inverter o eixo de piscada dos segmentos
+				if (eixo == vertical) {
+					eixo = horizontal;
+				} else {
+					eixo = vertical;
+				}
+
+				// Trocar a frequencia de piscada dos segmentos em função do eixo
+				TIM11->ARR = frequencias[eixo];
+
+				/*
+				if (estado == 1) {
+					TIM11->ARR = F7HZ;
+					estado = !estado;
+				} else {
+					TIM11->ARR = F5HZ;
+					estado = !estado;
+				}
+				*/
+
+				if (TIM11->CNT >= TIM11->ARR) TIM11->CNT = 0;
+			}
+		}
+
+		if (TIM11->SR & TIM_SR_UIF)
+		{
+			TIM11->SR &= ~TIM_SR_UIF;
+
+			GPIOB->ODR &= ~TODOS;
+
+			// Ligar os segmentos do display de acordo com o eixo selecionado
+			GPIOB->ODR |= segmentos[eixo];
+			/*
+			if (eixo == vertical) {
+				GPIOB->ODR |= VERTICAIS;
+			} else {
+				GPIOB->ODR |= HORIZONTAIS;
+			}
+			*/
+		}
+	}
+}
