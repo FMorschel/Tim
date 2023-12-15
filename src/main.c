@@ -14,11 +14,8 @@
 #define PONTO GPIO_ODR_ODR_7
 
 #define TAMANHO_VETOR 10
-#define TOTAL (TAMANHO_VETOR + 1)
 
-const uint8_t cronometro[TAMANHO_VETOR] = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-
-const uint32_t leds[10] = {
+const uint32_t leds[TAMANHO_VETOR] = {
 		LEDA | LEDB | LEDC | LEDD | LEDE | LEDF,						   // 0000 | 0 | led = 0
 		LEDB | LEDC,													   // 0001 | 1 | led = 1
 		LEDA | LEDB | LEDD | LEDE | LEDG,			   					   // 0010 | 2 | led = 2
@@ -29,6 +26,19 @@ const uint32_t leds[10] = {
 		LEDA | LEDB | LEDC,												   // 0111 | 7 | led = 7
 		LEDA | LEDB | LEDC | LEDD | LEDE | LEDF | LEDG,					   // 1000 | 8 | led = 8
 		LEDA | LEDB | LEDC | LEDD | LEDF | LEDG,						   // 1001 | 9 | led = 9
+};
+
+const uint32_t ARRs[10] = {
+		15999, // 1HZ
+		1599, // 5HZ
+		1142, // 7HZ
+		888, // 9HZ
+		726, // 11HZ
+		614, // 13HZ
+		532, // 15HZ
+		470, // 17HZ
+		420, // 19HZ
+		380, // 21HZ
 };
 
 #define TODOS (LEDA | LEDB | LEDC | LEDD | LEDE | LEDF | LEDG)
@@ -74,144 +84,85 @@ int main()
 		{
 			TIM10->SR &= ~TIM_SR_UIF;
 			GPIOC->ODR ^= PONTO;
+		}
 
-			// atualizando estado do botao 1
-			estados_botao1[anterior] = estados_botao1[atual];
+		// atualizando estado do botao 1
+		estados_botao1[anterior] = estados_botao1[atual];
+		if (GPIOC->IDR & botao1)
+		{
+			if (estados_botao1[atual] == 0)
+			{
+				for (int i = 0; i < TEMPO_DEBOUNCE; i++)
+					;
+			}
 			if (GPIOC->IDR & botao1)
 			{
 				estados_botao1[atual] = 1;
-				if (estados_botao1[atual] == 0)
-				{
-					for (int i = 0; i < TEMPO_DEBOUNCE; i++)
-						;
-				}
-				if (GPIOC->IDR & botao1)
-				{
-					estados_botao1[atual] = 1;
-				}
-				else
-				{
-					estados_botao1[atual] = 0;
-				}
 			}
 			else
 			{
 				estados_botao1[atual] = 0;
 			}
+		}
+		else
+		{
+			estados_botao1[atual] = 0;
+		}
 
-			// atualizando estado do botao 2
-			estados_botao2[anterior] = estados_botao2[atual];
+		// atualizando estado do botao 2
+		estados_botao2[anterior] = estados_botao2[atual];
+		if (GPIOC->IDR & botao2)
+		{
+			if (estados_botao2[atual] == 0)
+			{
+				for (int i = 0; i < TEMPO_DEBOUNCE; i++);
+			}
 			if (GPIOC->IDR & botao2)
 			{
 				estados_botao2[atual] = 1;
-				if (estados_botao2[atual] == 0)
-				{
-					for (int i = 0; i < TEMPO_DEBOUNCE; i++);
-				}
-				if (GPIOC->IDR & botao2)
-				{
-					estados_botao2[atual] = 1;
-				}
-				else
-				{
-					estados_botao2[atual] = 0;
-				}
 			}
 			else
 			{
 				estados_botao2[atual] = 0;
 			}
+		}
+		else
+		{
+			estados_botao2[atual] = 0;
+		}
 
-			// Caso queira rodar algo quando o botao começar a ser pressionado
-			// util para fazer algo apenas uma vez quando o botao for pressionado
-			if (estados_botao1[anterior] == 0 && estados_botao1[atual] == 1)
-			{
-				//GPIOB->ODR &= ~TODOS;
-				//GPIOB->ODR |= leds[2];
-
-				contador++;
-
-				if (contador == 0) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[0];
-					TIM10->ARR = 15999; // 1HZ
-				}
-
-				if (contador == 1) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[1];
-					TIM10->ARR = 1599; // 5HZ
-				}
-				if (contador == 2) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[2];
-					TIM10->ARR = 1142; // 7HZ
-				}
-				if (contador == 3) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[3];
-					TIM10->ARR = 888; // 9HZ
-				}
-				if (contador == 4) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[4];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 726; // 11HZ
-				}
-				if (contador == 5) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[5];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 614; // 13HZ
-				}
-				if (contador == 6) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[6];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 532; // 15HZ
-				}
-				if (contador == 7) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[7];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 470; // 17HZ
-				}
-				if (contador == 8) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[8];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 420; // 19HZ
-				}
-				if (contador == 9) {
-
-					GPIOB->ODR |= TODOS;
-					GPIOB -> ODR &=~ leds[9];
-					//GPIOC->ODR ^= PINO;
-					TIM10->ARR = 380; // 21HZ
-				}
+		// Caso queira rodar algo quando o botao começar a ser pressionado
+		// util para fazer algo apenas uma vez quando o botao for pressionado
+		if (estados_botao1[anterior] == 0 && estados_botao1[atual] == 1)
+		{
+			//GPIOB->ODR &= ~TODOS;
+			//GPIOB->ODR |= leds[2];
+			contador++;
+			if (contador > 9) {
+				contador = 9;
 			}
+			GPIOB->ODR |= TODOS;
+			GPIOB->ODR &=~ leds[contador];
+			TIM10->ARR = ARRs[contador];
+			if (TIM10->CNT >= TIM10->ARR) {
+				TIM10->CNT = 0;
+			}
+		}
 
-			if (estados_botao2[anterior] == 0 && estados_botao2[atual] == 1)
-						{
-							//GPIOB->ODR &= ~TODOS;
-							//GPIOB->ODR |= leds[2];
-					contador--;
-					if (contador < 0 ) {
-						contador = 0;
-					}
-					if (contador > 9) {
-						contador = 9;
-					}
-						}
+		if (estados_botao2[anterior] == 0 && estados_botao2[atual] == 1)
+		{
+			//GPIOB->ODR &= ~TODOS;
+			//GPIOB->ODR |= leds[2];
+			contador--;
+			if (contador < 0 ) {
+				contador = 0;
+			}
+			GPIOB->ODR |= TODOS;
+			GPIOB->ODR &=~ leds[contador];
+			TIM10->ARR = ARRs[contador];
+			if (TIM10->CNT >= TIM10->ARR) {
+				TIM10->CNT = 0;
+			}
 		}
 	}
 }
